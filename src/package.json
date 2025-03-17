@@ -1,0 +1,20 @@
+{
+  "name": "lab01-repos-populares",
+  "version": "1.0.0",
+  "main": "query-graphql.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.4.7",
+    "fs-extra": "^11.3.0",
+    "lab01-repos-populares": "file:",
+    "node-fetch": "^3.3.2"
+  }
+}
