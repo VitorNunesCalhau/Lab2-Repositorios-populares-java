@@ -8,7 +8,7 @@ dotenv.config();
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 if (!GITHUB_TOKEN) {
-  throw new Error(" Erro: GITHUB_TOKEN não encontrado no .env!");
+  throw new Error("Erro: GITHUB_TOKEN não encontrado no .env!");
 }
 
 const GRAPHQL_QUERY = `
@@ -50,7 +50,7 @@ async function fetchRepositories() {
 
     const { data, errors } = await response.json();
     if (errors) {
-      console.error(" Erro na API:", errors);
+      console.error("Erro na API:", errors);
       return [];
     }
 
@@ -70,20 +70,27 @@ async function fetchRepositories() {
     afterCursor = data.search.pageInfo.endCursor;
     hasNextPage = data.search.pageInfo.hasNextPage;
 
-    console.log(` Coletados ${repositories.length} repositórios até agora...`);
+    console.log(`Coletados ${repositories.length} repositórios até agora...`);
   }
 
   return repositories;
 }
 
-function cloneRepository(repoUrl, repoName, baseDir = "repos") {
+function cloneRepository(repoUrl, repoName, baseDir = "repos2") {
   const repoPath = `${baseDir}/${repoName.replace("/", "_")}`;
-  if (!fs.existsSync(repoPath)) {
-    console.log(` Clonando ${repoName}...`);
-    execSync(`git clone ${repoUrl} ${repoPath}`, { stdio: "inherit" });
-  } else {
-    console.log(` Repositório ${repoName} já existe, pulando...`);
+  
+  try {
+    if (!fs.existsSync(repoPath)) {
+      console.log(`Clonando ${repoName}...`);
+      execSync(`git clone ${repoUrl} ${repoPath}`, { stdio: "inherit" });
+    } else {
+      console.log(`Repositório ${repoName} já existe, pulando...`);
+    }
+  } catch (error) {
+    console.error(`Erro ao clonar o repositório ${repoName}: ${error.message}`);
+    return null; // Retorna null se o clone falhar
   }
+
   return repoPath;
 }
 
@@ -93,15 +100,24 @@ function runCKAnalysis(repoPath) {
   fs.ensureDirSync(outputDir);
 
   const cmd = `java -jar ${ckJarPath} ${repoPath} false 0 true ${outputDir}`;
-  execSync(cmd, { stdio: "inherit" });
+  
+  try {
+    // Tenta rodar a análise CK
+    execSync(cmd, { stdio: "inherit" });
 
-  const metricsFile = `${outputDir}/class.csv`;
-  if (fs.existsSync(metricsFile)) {
-    const data = fs.readFileSync(metricsFile, "utf-8").split("\n").slice(1);
-    return data.map((line) => {
-      const cols = line.split(",");
-      return { class: cols[0], cbo: cols[1], dit: cols[2], lcom: cols[3] };
-    });
+    const metricsFile = `${outputDir}/class.csv`;
+    if (fs.existsSync(metricsFile)) {
+      const data = fs.readFileSync(metricsFile, "utf-8").split("\n").slice(1);
+      return data.map((line) => {
+        const cols = line.split(",");
+        return { class: cols[0], cbo: cols[1], dit: cols[2], lcom: cols[3] };
+      });
+    }
+
+  } catch (error) {
+    // Se falhar, loga o erro e retorna um array vazio
+    console.error(`Erro ao processar o repositório ${repoPath}: ${error.message}`);
+    return []; // Retorna vazio para não interromper o fluxo
   }
 
   return [];
@@ -114,27 +130,36 @@ async function saveToCSV(data, filename) {
   });
 
   await csvWriter.writeRecords(data);
-  console.log(` Dados salvos em ${filename}`);
+  console.log(`Dados salvos em ${filename}`);
 }
 
 async function main() {
-  console.log(" Buscando repositórios...");
+  console.log("Buscando repositórios...");
   const repos = await fetchRepositories();
   if (!repos.length) {
-    console.error(" Nenhum repositório encontrado!");
+    console.error("Nenhum repositório encontrado!");
     return;
   }
 
-  await saveToCSV(repos, "repos_list.csv");
+  await saveToCSV(repos, "repos_list2.csv");
 
-  const baseDir = "repos";
+  const baseDir = "repos2";
   fs.ensureDirSync(baseDir);
 
   let results = [];
 
-  for (const repo of repos.slice(0, 1)) { 
+  for (const repo of repos) { 
     const repoPath = cloneRepository(repo.url, repo.name, baseDir);
+    if (!repoPath) {
+      console.log(`Pulando repositório ${repo.name} devido a falha no clone.`);
+      continue; // Se falhar no clone, pula para o próximo repositório
+    }
+
     const metrics = runCKAnalysis(repoPath);
+    if (metrics.length === 0) {
+      console.log(`Nenhuma métrica gerada para o repositório ${repo.name}.`);
+      continue; // Se não gerar métricas, pula para o próximo
+    }
 
     for (const metric of metrics) {
       results.push({
@@ -154,8 +179,9 @@ async function main() {
 
   if (results.length) {
     await saveToCSV(results, "metrics_results.csv");
+  } else {
+    console.log("Nenhum dado de métricas foi coletado.");
   }
 }
-
 
 main().catch(console.error);
