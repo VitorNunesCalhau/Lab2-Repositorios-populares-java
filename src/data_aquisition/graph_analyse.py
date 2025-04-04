@@ -1,13 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Nome do arquivo CSV
 file_name = "final_repo_metrics.csv"
 
-# Colunas esperadas no CSV
 columns = ["name", "stars", "created_at", "releases", "url", "LOC_média", "CBO_média", "DIT_média", "LCOM_média"]
 
-# Ler o arquivo CSV
 try:
     df = pd.read_csv(file_name, usecols=columns)
 except FileNotFoundError:
@@ -17,7 +14,6 @@ except ValueError as e:
     print(f"Erro ao ler o arquivo CSV: {e}")
     exit()
 
-# Criar gráficos
 metrics = ["LOC_média", "CBO_média", "DIT_média", "LCOM_média"]
 plt.figure(figsize=(12, 8))
 
