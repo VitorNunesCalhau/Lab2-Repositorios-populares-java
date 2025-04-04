@@ -3,7 +3,6 @@ import subprocess
 import pandas as pd
 import requests
 
-# Configuração
 GITHUB_TOKEN = ""
 GITHUB_API_URL = "https://api.github.com/graphql"
 HEADERS = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
@@ -11,13 +10,11 @@ CK_JAR_PATH = "C:\\Users\\PESSOAL\\Desktop\\Faculdade_caralho\\LAB6\\Lab2-Reposi
 REPOS_DIR = "repositorios_java"
 CK_OUTPUT_DIR = "C:\\Users\\PESSOAL\\Desktop\\Faculdade_caralho\\LAB6\\Lab2-Repositorios-populares-java\\src\\data_aquisition\\ck_output"
 RESULTS_FILE = "final_repo_metrics.csv"
-MAX_REPOS = 1000  # Ajuste conforme necessário
+MAX_REPOS = 1000
 
-# Criar diretórios necessários
 os.makedirs(REPOS_DIR, exist_ok=True)
 os.makedirs(CK_OUTPUT_DIR, exist_ok=True)
 
-# --- Buscar repositórios do GitHub ---
 def buscar_repositorios():
     print("Buscando repositórios Java no GitHub...")
     repos = []
@@ -77,7 +74,6 @@ def buscar_repositorios():
     print(f"{len(repos)} repositórios obtidos.")
     return pd.DataFrame(repos)
 
-# --- Clonar repositórios ---
 def clonar_repositorios(df_repos):
     print("Clonando repositórios...")
 
@@ -88,7 +84,6 @@ def clonar_repositorios(df_repos):
         else:
             print(f"Repositório {repo} já clonado.")
 
-# --- Executar CK ---
 def executar_ck():
     print("Executando CK...")
     if not os.path.exists(CK_JAR_PATH):
@@ -113,7 +108,6 @@ def executar_ck():
         else:
             print(f"Métricas já geradas para {repo}.")
 
-# --- Processar métricas CK ---
 def processar_metricas():
     print("Processando métricas CK...")
 
@@ -154,7 +148,6 @@ def processar_metricas():
         df_ck = pd.DataFrame(columns=["name"])
     return df_ck
 
-# --- Unir dados e salvar ---
 def unir_dados():
     print("Unindo dados do GitHub e CK...")
 
@@ -173,6 +166,5 @@ def unir_dados():
     df_final.to_csv(RESULTS_FILE, index=False)
     print(f"Dados salvos em {RESULTS_FILE}")
 
-# Executar o script
 if __name__ == "__main__":
     unir_dados()
